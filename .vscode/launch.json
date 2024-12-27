@@ -1,0 +1,38 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Launch Client",
+            "request": "launch",
+            "mainClass": "com.ur91k.clichat.app.ClientApplication",
+            "projectName": "clichat"
+        },
+        {
+            "type": "java",
+            "name": "Launch Server",
+            "request": "launch",
+            "mainClass": "com.ur91k.clichat.app.ServerLauncher",
+            "projectName": "clichat",
+            "args": ["--debug"]
+        },
+        {
+            "type": "java",
+            "name": "Launch Server (Custom Port)",
+            "request": "launch",
+            "mainClass": "com.ur91k.clichat.app.ServerLauncher",
+            "projectName": "clichat",
+            "args": ["--debug", "--port", "8888"]
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Server + Client",
+            "configurations": ["Launch Server", "Launch Client"]
+        },
+        {
+            "name": "Server + 2 Clients",
+            "configurations": ["Launch Server", "Launch Client", "Launch Client"]
+        }
+    ]
+}
