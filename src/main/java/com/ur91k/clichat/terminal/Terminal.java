@@ -231,7 +231,7 @@ public class Terminal {
         }
     }
     
-    public void addLine(String text) {
+    public void addLine(String text, Vector4f usernameColor) {
         // Move to next line
         currentLine++;
         
@@ -274,12 +274,13 @@ public class Terminal {
                     // User message, color the username
                     int colonPos = remaining.indexOf(":");
                     if (colonPos > 0) {
-                        // Username part
+                        // Username part with provided color
                         String username = remaining.substring(0, colonPos);
                         for (char c : username.toCharArray()) {
                             if (x >= width) break;
                             chars[currentLine - 1][x] = c;
-                            fgColors[currentLine - 1][x] = new Vector4f(usernameColor);
+                            fgColors[currentLine - 1][x] = usernameColor != null ? 
+                                new Vector4f(usernameColor) : new Vector4f(DEFAULT_FG);
                             x++;
                         }
                         
@@ -303,6 +304,10 @@ public class Terminal {
                 x++;
             }
         }
+    }
+    
+    public void addLine(String text) {
+        addLine(text, null);
     }
     
     public void setInputActive(boolean active) {

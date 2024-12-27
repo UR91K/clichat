@@ -121,7 +121,7 @@ public class ClientApplication {
         
         // User preview section
         terminal.addLine("You appear as:");
-        terminal.addLine("[00:00:00] " + username + ": Hello, world!");
+        terminal.addLine("[00:00:00] " + username + ": Hello, world!", userColor);
         terminal.addLine("");
         
         // Available servers section
@@ -173,7 +173,7 @@ public class ClientApplication {
     }
     
     private void handleMessage(Message message) {
-        terminal.addLine(message.format());
+        terminal.addLine(message.format(), message.getDisplayColor());
         
         // Update room info if it's a room update
         if (message.getType() == Message.Type.ROOM_UPDATE) {
@@ -260,6 +260,7 @@ public class ClientApplication {
                     terminal.addLine("/disconnect - Disconnect from server");
                     terminal.addLine("/quit - Exit the application");
                 }
+                terminal.addLine("/color [hex] - Change your color (e.g. /color #ff0000 for red)");
                 break;
                 
             case "/nick":
@@ -278,12 +279,32 @@ public class ClientApplication {
                 break;
                 
             case "/color":
-                Vector4f newColor = new Vector4f(
-                    0.3f + random.nextFloat() * 0.7f,
-                    0.3f + random.nextFloat() * 0.7f,
-                    0.3f + random.nextFloat() * 0.7f,
-                    1.0f
-                );
+                Vector4f newColor;
+                if (args.isEmpty()) {
+                    // Random color if no argument provided
+                    newColor = new Vector4f(
+                        0.3f + random.nextFloat() * 0.7f,
+                        0.3f + random.nextFloat() * 0.7f,
+                        0.3f + random.nextFloat() * 0.7f,
+                        1.0f
+                    );
+                } else {
+                    // Parse hex color
+                    try {
+                        String hex = args.startsWith("#") ? args.substring(1) : args;
+                        if (hex.length() != 6) {
+                            terminal.addLine("* Invalid hex color. Use format: #RRGGBB");
+                            break;
+                        }
+                        int r = Integer.parseInt(hex.substring(0, 2), 16);
+                        int g = Integer.parseInt(hex.substring(2, 4), 16);
+                        int b = Integer.parseInt(hex.substring(4, 6), 16);
+                        newColor = new Vector4f(r / 255f, g / 255f, b / 255f, 1.0f);
+                    } catch (NumberFormatException e) {
+                        terminal.addLine("* Invalid hex color. Use format: #RRGGBB");
+                        break;
+                    }
+                }
                 userColor = newColor;
                 terminal.setUsernameColor(newColor);
                 if (client != null && client.isConnected()) {

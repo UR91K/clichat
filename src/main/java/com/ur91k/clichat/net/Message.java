@@ -136,6 +136,13 @@ public class Message {
         }
     }
     
+    /**
+     * Gets the color to use when rendering this message's sender name
+     */
+    public Vector4f getDisplayColor() {
+        return type == Type.SYSTEM || type == Type.COMMAND ? null : senderColor;
+    }
+    
     // Getters
     public Type getType() { return type; }
     public String getSenderId() { return senderId; }
