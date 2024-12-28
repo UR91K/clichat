@@ -9,7 +9,6 @@ import com.ur91k.clichat.net.Message;
 import com.ur91k.clichat.config.ServerConfig;
 import com.ur91k.clichat.profile.UserProfile;
 import com.ur91k.clichat.profile.UserProfileManager;
-import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCharCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.opengl.GL;
@@ -182,6 +181,7 @@ public class ClientApplication {
                 case PROFILE_CREATE -> handleProfileCreate(input);
                 case PROFILE_LOGIN -> handleProfileLogin(input);
                 case DISCONNECTED -> handleDisconnectedInput(input);
+                case CONNECTING -> terminal.addLine("* Please wait while connecting...");
                 case CONNECTED -> {
                     if (input.startsWith("/")) {
                         handleCommand(input);
