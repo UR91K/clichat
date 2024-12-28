@@ -4,23 +4,20 @@ import com.ur91k.clichat.render.TextRenderer;
 import org.joml.Vector4f;
 
 /**
- * Base terminal implementation with shared functionality.
- * Handles basic terminal operations like text rendering and grid management.
+ * Base class for terminal implementations providing core functionality.
  */
-public abstract class BaseTerminal implements ITerminal {
+public abstract class BaseTerminal {
+    // Common constants
     protected static final int DEFAULT_WIDTH = 80;  // characters
     protected static final Vector4f DEFAULT_FG = new Vector4f(0.8f, 0.8f, 0.8f, 1.0f);
     protected static final Vector4f DEFAULT_BG = new Vector4f(0.1f, 0.1f, 0.1f, 1.0f);
     protected static final int PADDING = 6;  // Minimal padding from window edges
     
+    // Core components
     protected final TextRenderer textRenderer;
     protected final int width;
-    protected final int charWidth = 8;  // Font dimensions
+    protected final int charWidth = 8;  // Spleen font is 8x16
     protected final int charHeight = 16;
-    
-    // Grid dimensions
-    protected int totalHeight;        // Total visible height in characters
-    protected int messageAreaHeight;  // Calculated based on window size
     
     // Grid storage
     protected char[][] chars;
@@ -28,11 +25,15 @@ public abstract class BaseTerminal implements ITerminal {
     protected Vector4f[][] bgColors;
     protected int currentLine = 0;    // Current line in message history
     
-    public BaseTerminal(TextRenderer textRenderer) {
+    // Dimensions
+    protected int totalHeight;        // Total visible height in characters
+    protected int messageAreaHeight;  // Calculated based on window size
+    
+    protected BaseTerminal(TextRenderer textRenderer) {
         this(textRenderer, DEFAULT_WIDTH);
     }
     
-    public BaseTerminal(TextRenderer textRenderer, int width) {
+    protected BaseTerminal(TextRenderer textRenderer, int width) {
         this.textRenderer = textRenderer;
         this.width = width;
         
@@ -52,42 +53,29 @@ public abstract class BaseTerminal implements ITerminal {
         }
     }
     
-    @Override
-    public void handleResize(int width, int height) {
-        totalHeight = (height - 2 * PADDING) / charHeight;
-        messageAreaHeight = totalHeight;  // By default, use full height
-        textRenderer.handleResize(width, height);
-    }
+    /**
+     * Handle window resize events.
+     */
+    public abstract void handleResize(int width, int height);
     
-    @Override
-    public void addLine(String text) {
-        addLine(text, null);
-    }
+    /**
+     * Render the terminal content.
+     */
+    public abstract void render();
     
-    @Override
-    public void addLine(String text, Vector4f color) {
-        // Move to next line
-        currentLine++;
-        
-        // Clear the new line
-        for (int x = 0; x < width; x++) {
-            chars[currentLine - 1][x] = ' ';
-            fgColors[currentLine - 1][x] = new Vector4f(DEFAULT_FG);
-            bgColors[currentLine - 1][x] = new Vector4f(DEFAULT_BG);
-        }
-        
-        // Add text with color
-        int x = 0;
-        Vector4f textColor = color != null ? color : DEFAULT_FG;
-        for (char c : text.toCharArray()) {
-            if (x >= width) break;
-            chars[currentLine - 1][x] = c;
-            fgColors[currentLine - 1][x] = new Vector4f(textColor);
-            x++;
-        }
-    }
+    /**
+     * Add a line of text to the terminal.
+     */
+    public abstract void addLine(String text);
     
-    @Override
+    /**
+     * Handle character input.
+     */
+    public abstract void handleCharacter(char c);
+    
+    /**
+     * Clear all lines in the terminal.
+     */
     public void clearLines() {
         // Reset all lines to empty
         for (int y = 0; y < chars.length; y++) {
@@ -100,6 +88,9 @@ public abstract class BaseTerminal implements ITerminal {
         currentLine = 0;
     }
     
+    /**
+     * Render a single line of text.
+     */
     protected void renderLine(int bufferLine, int screenY) {
         for (int x = 0; x < width; x++) {
             String charStr = String.valueOf(chars[bufferLine][x]);
@@ -112,6 +103,9 @@ public abstract class BaseTerminal implements ITerminal {
         }
     }
     
+    /**
+     * Render a blank line.
+     */
     protected void renderBlankLine(int y) {
         textRenderer.renderText(
             " ".repeat(width),
@@ -119,5 +113,28 @@ public abstract class BaseTerminal implements ITerminal {
             y,
             DEFAULT_FG
         );
+    }
+    
+    /**
+     * Add a line of text with a specific color.
+     */
+    protected void addLine(String text, Vector4f color) {
+        // Move to next line
+        currentLine++;
+        
+        // Clear the new line
+        for (int x = 0; x < width; x++) {
+            chars[currentLine - 1][x] = ' ';
+            fgColors[currentLine - 1][x] = color != null ? new Vector4f(color) : new Vector4f(DEFAULT_FG);
+            bgColors[currentLine - 1][x] = new Vector4f(DEFAULT_BG);
+        }
+        
+        // Add the text
+        int x = 0;
+        for (char c : text.toCharArray()) {
+            if (x >= width) break;
+            chars[currentLine - 1][x] = c;
+            x++;
+        }
     }
 } 

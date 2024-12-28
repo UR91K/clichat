@@ -43,13 +43,6 @@
                 "--port",
                 "8888"
             ]
-        },
-        {
-            "type": "java",
-            "name": "Debug Tools",
-            "request": "launch",
-            "mainClass": "com.ur91k.clichat.debug.DebugApp",
-            "projectName": "clichat"
         }
     ],
     "compounds": [

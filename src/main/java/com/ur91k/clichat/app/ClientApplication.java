@@ -28,8 +28,8 @@ public class ClientApplication {
     private static final Random random = new Random();
     
     private Window window;
-    private TextRenderer textRenderer;
     private ChatTerminal terminal;
+    private TextRenderer textRenderer;
     private ChatClient client;
     private ServerConfig serverConfig;
     private boolean running = true;

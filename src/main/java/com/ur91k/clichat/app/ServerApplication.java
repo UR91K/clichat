@@ -20,8 +20,8 @@ public class ServerApplication {
     private final String ip;
     private final int port;
     private Window window;
-    private TextRenderer textRenderer;
     private ChatTerminal terminal;
+    private TextRenderer textRenderer;
     private ChatServer server;
     private boolean running = true;
     

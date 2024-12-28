@@ -2,14 +2,15 @@ package com.ur91k.clichat.terminal;
 
 import com.ur91k.clichat.render.TextRenderer;
 import org.joml.Vector4f;
-
+import static com.ur91k.clichat.render.ColorUtils.rgb;
 /**
- * Chat-specific terminal implementation with status bar, input line, and message formatting.
+ * Specialized terminal implementation for chat functionality with status bar and input line.
  */
 public class ChatTerminal extends BaseTerminal {
-    private static final Vector4f CONNECTED_COLOR = new Vector4f(0.2f, 0.8f, 0.2f, 1.0f);  // Green
-    private static final Vector4f DISCONNECTED_COLOR = new Vector4f(0.8f, 0.2f, 0.2f, 1.0f);  // Red
-    private static final Vector4f IP_COLOR = new Vector4f(0.5f, 0.5f, 0.5f, 1.0f);  // Grey
+    // Chat-specific constants
+    private static final Vector4f CONNECTED_COLOR = rgb(0x71BD42);  // Green
+    private static final Vector4f DISCONNECTED_COLOR = rgb(0xC43B4B);  // Red
+    private static final Vector4f IP_COLOR = rgb(0xa09999);  // Grey
     private static final Vector4f TIMESTAMP_COLOR = IP_COLOR;  // Use same grey for timestamps
     
     // Layout constants
@@ -33,15 +34,15 @@ public class ChatTerminal extends BaseTerminal {
     
     public ChatTerminal(TextRenderer textRenderer) {
         super(textRenderer);
-        initChatTerminal();
+        initializeChatState();
     }
     
     public ChatTerminal(TextRenderer textRenderer, int width) {
         super(textRenderer, width);
-        initChatTerminal();
+        initializeChatState();
     }
     
-    private void initChatTerminal() {
+    private void initializeChatState() {
         inputBuffer = new StringBuilder();
         cursorX = 0;
         inputActive = true;
@@ -49,8 +50,9 @@ public class ChatTerminal extends BaseTerminal {
     
     @Override
     public void handleResize(int width, int height) {
-        super.handleResize(width, height);
+        totalHeight = (height - 2 * PADDING) / charHeight;
         messageAreaHeight = totalHeight - (2 * BLANK_LINES) - STATUS_HEIGHT - 1; // -1 for input line
+        textRenderer.handleResize(width, height);
     }
     
     @Override
@@ -128,6 +130,7 @@ public class ChatTerminal extends BaseTerminal {
         }
     }
     
+    @Override
     public void handleCharacter(char c) {
         if (!inputActive) return;
         
@@ -169,22 +172,26 @@ public class ChatTerminal extends BaseTerminal {
     }
     
     @Override
-    public void addLine(String text, Vector4f usernameColor) {
-        // Move to next line
-        currentLine++;
-        
-        // Clear the new line
-        for (int x = 0; x < width; x++) {
-            chars[currentLine - 1][x] = ' ';
-            fgColors[currentLine - 1][x] = new Vector4f(DEFAULT_FG);
-            bgColors[currentLine - 1][x] = new Vector4f(DEFAULT_BG);
-        }
-        
-        // Parse and add text with colors
+    public void addLine(String text) {
+        addLine(text, null);
+    }
+    
+    @Override
+    public void addLine(String text, Vector4f color) {
         if (text.startsWith("[")) {
             // Message with timestamp
             int timestampEnd = text.indexOf("]") + 1;
             if (timestampEnd > 0) {
+                // Move to next line
+                currentLine++;
+                
+                // Clear the new line
+                for (int x = 0; x < width; x++) {
+                    chars[currentLine - 1][x] = ' ';
+                    fgColors[currentLine - 1][x] = new Vector4f(DEFAULT_FG);
+                    bgColors[currentLine - 1][x] = new Vector4f(DEFAULT_BG);
+                }
+                
                 // Add timestamp in grey
                 int x = 0;
                 for (int i = 0; i < timestampEnd; i++) {
@@ -217,8 +224,8 @@ public class ChatTerminal extends BaseTerminal {
                         for (char c : username.toCharArray()) {
                             if (x >= width) break;
                             chars[currentLine - 1][x] = c;
-                            fgColors[currentLine - 1][x] = usernameColor != null ? 
-                                new Vector4f(usernameColor) : new Vector4f(DEFAULT_FG);
+                            fgColors[currentLine - 1][x] = color != null ? 
+                                new Vector4f(color) : new Vector4f(DEFAULT_FG);
                             x++;
                         }
                         
@@ -235,12 +242,7 @@ public class ChatTerminal extends BaseTerminal {
             }
         } else {
             // Plain text without timestamp
-            int x = 0;
-            for (char c : text.toCharArray()) {
-                if (x >= width) break;
-                chars[currentLine - 1][x] = c;
-                x++;
-            }
+            super.addLine(text, color);
         }
     }
     
@@ -286,6 +288,6 @@ public class ChatTerminal extends BaseTerminal {
     
     public void setRoomInfo(String name, Vector4f color) {
         this.roomName = name;
-        this.roomNameColor = color;
+        this.roomNameColor = color != null ? color : new Vector4f(DEFAULT_FG);
     }
 } 
