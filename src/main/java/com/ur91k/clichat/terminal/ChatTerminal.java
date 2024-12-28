@@ -29,6 +29,8 @@ public class ChatTerminal extends BaseTerminal {
     private boolean inputActive;
     
     private String username = "";
+    
+    @SuppressWarnings("unused")
     private Vector4f usernameColor = new Vector4f(DEFAULT_FG);
     private static final String PROMPT_SUFFIX = " >> ";
     

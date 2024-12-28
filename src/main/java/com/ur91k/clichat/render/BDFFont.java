@@ -61,6 +61,7 @@ public class BDFFont extends BitmapFont {
         }
     }
 
+    @SuppressWarnings("unused")
     private static class FontDimensions {
         final int width;
         final int height;

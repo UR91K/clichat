@@ -4,7 +4,6 @@ import com.ur91k.clichat.render.TextRenderer;
 import com.ur91k.clichat.render.Window;
 import com.ur91k.clichat.terminal.ChatTerminal;
 import com.ur91k.clichat.net.ChatServer;
-import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCharCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.opengl.GL;
@@ -106,6 +105,7 @@ public class ServerApplication {
         }
     }
     
+    @SuppressWarnings("unused")
     private void handleCommand() {
         String input = terminal.getCurrentInput().trim();
         if (!input.isEmpty()) {
