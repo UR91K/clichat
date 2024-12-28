@@ -30,7 +30,7 @@ public class TextRenderer {
     public TextRenderer(int windowWidth, int windowHeight) {
         try {
             ClassLoader classLoader = getClass().getClassLoader();
-            font = new BDFFont(classLoader.getResourceAsStream("fonts/spleen-8x16.bdf"));
+            font = new BDFFont(classLoader.getResourceAsStream("fonts/Bm437_HP_100LX_10x11.bdf"));
             
             shader = new ShaderProgram(
                 classLoader.getResourceAsStream("shaders/text_vertex.glsl"),
@@ -258,5 +258,14 @@ public class TextRenderer {
         glDeleteTextures(textureId);
         glDeleteBuffers(vbo);
         glDeleteVertexArrays(vao);
+    }
+
+    /**
+     * Checks if a character has a glyph in the current font.
+     * @param c The character to check
+     * @return true if the character has a glyph, false otherwise
+     */
+    public boolean hasGlyph(char c) {
+        return font.hasGlyph(c);
     }
 } 

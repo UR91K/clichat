@@ -154,4 +154,13 @@ public abstract class BitmapFont {
         while (value < n) value <<= 1;
         return value;
     }
+
+    /**
+     * Checks if a character has a glyph in this font.
+     * @param c The character to check
+     * @return true if the character has a glyph, false otherwise
+     */
+    public boolean hasGlyph(char c) {
+        return glyphs.containsKey(c);
+    }
 } 

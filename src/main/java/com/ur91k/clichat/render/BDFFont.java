@@ -88,6 +88,7 @@ public class BDFFont extends BitmapFont {
         int boundingBoxHeight = 0;
         int baseline = 0;
         int currentChar = -1;
+        int charCount = 0;
         
         try (BufferedReader reader = new BufferedReader(new StringReader(fileContent))) {
             String line;
@@ -101,18 +102,23 @@ public class BDFFont extends BitmapFont {
                         baseline = -Integer.parseInt(tokens[4]);
                         maxWidth = Math.max(maxWidth, boundingBoxWidth);
                         break;
-                    case "ENCODING":
-                        currentChar = Integer.parseInt(tokens[1]);
-                        if (currentChar >= 32 && currentChar <= 126) {
-                            totalHeight += boundingBoxHeight;
-                        }
+                    case "CHARS":
+                        charCount = Integer.parseInt(tokens[1]);
+                        logger.debug("Font contains {} characters", charCount);
+                        break;
+                    case "BBX":
+                        int width = Integer.parseInt(tokens[1]);
+                        maxWidth = Math.max(maxWidth, width);
                         break;
                 }
             }
         }
         
+        // Calculate total height needed for all characters
+        totalHeight = (charCount + 15) / 16 * boundingBoxHeight;  // 16 characters per row
+        
         // Calculate texture dimensions (power of 2)
-        int calculatedWidth = nextPowerOfTwo(maxWidth * 16);
+        int calculatedWidth = nextPowerOfTwo(maxWidth * 16);  // 16 characters per row
         int calculatedHeight = nextPowerOfTwo(totalHeight);
         
         logger.debug("Creating texture atlas of size {}x{} for font {}x{}", 
@@ -166,7 +172,28 @@ public class BDFFont extends BitmapFont {
                         // Read bitmap data
                         for (int i = 0; i < bitmapHeight; i++) {
                             line = reader.readLine();
-                            int value = Integer.parseInt(line, 16);
+                            if (line == null) {
+                                logger.error("Unexpected end of bitmap data for char {}", currentChar);
+                                break;
+                            }
+                            
+                            // Calculate bytes needed for this width
+                            int bytesNeeded = (bitmapWidth + 7) / 8;
+                            int value = 0;
+                            
+                            // Parse hex string considering byte alignment
+                            try {
+                                value = Integer.parseInt(line.trim(), 16);
+                            } catch (NumberFormatException e) {
+                                logger.error("Failed to parse bitmap line '{}' for char {}", line, currentChar);
+                                continue;
+                            }
+                            
+                            // Shift based on actual character width
+                            int shift = bytesNeeded * 8 - bitmapWidth;
+                            value = value >>> shift;
+                            
+                            // Extract bits for the actual character width
                             for (int j = 0; j < bitmapWidth; j++) {
                                 currentBitmap[i * bitmapWidth + j] = 
                                     ((value >> (bitmapWidth - 1 - j)) & 1) == 1;
@@ -175,7 +202,7 @@ public class BDFFont extends BitmapFont {
                         break;
                         
                     case "ENDCHAR":
-                        if (currentChar >= 32 && currentChar <= 126 && currentBitmap != null) {
+                        if (currentChar >= 0 && currentChar < 256 && currentBitmap != null) {
                             // Calculate texture coordinates
                             float s0 = (float)currentX / textureWidth;
                             float t0 = (float)currentY / textureHeight;

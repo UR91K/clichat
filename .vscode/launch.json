@@ -3,6 +3,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "DebugApplication",
+            "request": "launch",
+            "mainClass": "com.ur91k.clichat.app.DebugApplication",
+            "projectName": "clichat"
+        },
+        {
+            "type": "java",
             "name": "FontDebugApp",
             "request": "launch",
             "mainClass": "com.ur91k.clichat.debug.FontDebugApp",
