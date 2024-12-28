@@ -1,41 +1,20 @@
 package com.ur91k.clichat.terminal;
 
 import com.ur91k.clichat.render.TextRenderer;
-import com.ur91k.clichat.render.ColorUtils;
-import org.joml.Vector2f;
 import org.joml.Vector4f;
 
 /**
- * Manages a terminal-like display with distinct zones for status, messages, and input.
+ * Chat-specific terminal implementation with status bar, input line, and message formatting.
  */
-public class Terminal {
-    private static final int DEFAULT_WIDTH = 80;  // characters
-    private static final Vector4f DEFAULT_FG = new Vector4f(0.8f, 0.8f, 0.8f, 1.0f);
-    private static final Vector4f DEFAULT_BG = new Vector4f(0.1f, 0.1f, 0.1f, 1.0f);
+public class ChatTerminal extends BaseTerminal {
     private static final Vector4f CONNECTED_COLOR = new Vector4f(0.2f, 0.8f, 0.2f, 1.0f);  // Green
     private static final Vector4f DISCONNECTED_COLOR = new Vector4f(0.8f, 0.2f, 0.2f, 1.0f);  // Red
     private static final Vector4f IP_COLOR = new Vector4f(0.5f, 0.5f, 0.5f, 1.0f);  // Grey
     private static final Vector4f TIMESTAMP_COLOR = IP_COLOR;  // Use same grey for timestamps
-    private static final int PADDING = 6;  // Minimal padding from window edges
     
     // Layout constants
     private static final int STATUS_HEIGHT = 1;  // Status bar height
     private static final int BLANK_LINES = 1;    // Spacing between zones
-    
-    private final TextRenderer textRenderer;
-    private final int width;
-    private final int charWidth = 8;  // Spleen font is 8x16
-    private final int charHeight = 16;
-    
-    // Zone dimensions
-    private int messageAreaHeight;  // Calculated based on window size
-    private int totalHeight;        // Total visible height in characters
-    
-    // Grid storage
-    private char[][] chars;
-    private Vector4f[][] fgColors;
-    private Vector4f[][] bgColors;
-    private int currentLine = 0;    // Current line in message history
     
     // Status information
     private String statusText = "DISCONNECTED";
@@ -52,41 +31,29 @@ public class Terminal {
     private Vector4f usernameColor = new Vector4f(DEFAULT_FG);
     private static final String PROMPT_SUFFIX = " >> ";
     
-    public Terminal(TextRenderer textRenderer) {
-        this(textRenderer, DEFAULT_WIDTH);
+    public ChatTerminal(TextRenderer textRenderer) {
+        super(textRenderer);
+        initChatTerminal();
     }
     
-    public Terminal(TextRenderer textRenderer, int width) {
-        this.textRenderer = textRenderer;
-        this.width = width;
-        
-        // Start with a reasonably large buffer
-        int initialHeight = 1000;  // Large enough to hold plenty of scrollback
-        chars = new char[initialHeight][width];
-        fgColors = new Vector4f[initialHeight][width];
-        bgColors = new Vector4f[initialHeight][width];
-        
-        // Initialize with spaces and default colors
-        for (int y = 0; y < initialHeight; y++) {
-            for (int x = 0; x < width; x++) {
-                chars[y][x] = ' ';
-                fgColors[y][x] = new Vector4f(DEFAULT_FG);
-                bgColors[y][x] = new Vector4f(DEFAULT_BG);
-            }
-        }
-        
+    public ChatTerminal(TextRenderer textRenderer, int width) {
+        super(textRenderer, width);
+        initChatTerminal();
+    }
+    
+    private void initChatTerminal() {
         inputBuffer = new StringBuilder();
         cursorX = 0;
         inputActive = true;
     }
     
+    @Override
     public void handleResize(int width, int height) {
-        // Calculate dimensions
-        totalHeight = (height - 2 * PADDING) / charHeight;
+        super.handleResize(width, height);
         messageAreaHeight = totalHeight - (2 * BLANK_LINES) - STATUS_HEIGHT - 1; // -1 for input line
-        textRenderer.handleResize(width, height);
     }
     
+    @Override
     public void render() {
         // Render status bar
         renderStatusBar();
@@ -98,7 +65,6 @@ public class Terminal {
         // Calculate visible message range
         int visibleLines = Math.min(messageAreaHeight, currentLine);
         int startLine = Math.max(0, currentLine - visibleLines);
-        int endLine = currentLine;
         
         // Render messages
         int messageStartY = (STATUS_HEIGHT + BLANK_LINES) * charHeight + PADDING;
@@ -141,27 +107,6 @@ public class Terminal {
         }
     }
     
-    private void renderBlankLine(int y) {
-        textRenderer.renderText(
-            " ".repeat(width),
-            PADDING,
-            y,
-            DEFAULT_FG
-        );
-    }
-    
-    private void renderLine(int bufferLine, int screenY) {
-        for (int x = 0; x < width; x++) {
-            String charStr = String.valueOf(chars[bufferLine][x]);
-            textRenderer.renderText(
-                charStr,
-                PADDING + (x * charWidth),
-                screenY,
-                fgColors[bufferLine][x]
-            );
-        }
-    }
-    
     private void renderInputLine(int y) {
         String prompt = username + PROMPT_SUFFIX;
         textRenderer.renderText(
@@ -181,14 +126,6 @@ public class Terminal {
                 new Vector4f(1.0f, 1.0f, 1.0f, 1.0f)
             );
         }
-    }
-    
-    public void setStatus(String status) {
-        this.statusText = status;
-    }
-    
-    public void setRoomName(String name) {
-        this.roomName = name;
     }
     
     public void handleCharacter(char c) {
@@ -231,6 +168,7 @@ public class Terminal {
         }
     }
     
+    @Override
     public void addLine(String text, Vector4f usernameColor) {
         // Move to next line
         currentLine++;
@@ -306,8 +244,13 @@ public class Terminal {
         }
     }
     
-    public void addLine(String text) {
-        addLine(text, null);
+    // Chat-specific methods
+    public void setStatus(String status) {
+        this.statusText = status;
+    }
+    
+    public void setRoomName(String name) {
+        this.roomName = name;
     }
     
     public void setInputActive(boolean active) {
@@ -344,17 +287,5 @@ public class Terminal {
     public void setRoomInfo(String name, Vector4f color) {
         this.roomName = name;
         this.roomNameColor = color;
-    }
-    
-    public void clearLines() {
-        // Reset all lines to empty
-        for (int y = 0; y < chars.length; y++) {
-            for (int x = 0; x < width; x++) {
-                chars[y][x] = ' ';
-                fgColors[y][x] = new Vector4f(DEFAULT_FG);
-                bgColors[y][x] = new Vector4f(DEFAULT_BG);
-            }
-        }
-        currentLine = 0;
     }
 } 

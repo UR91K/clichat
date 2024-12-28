@@ -2,7 +2,7 @@ package com.ur91k.clichat.app;
 
 import com.ur91k.clichat.render.TextRenderer;
 import com.ur91k.clichat.render.Window;
-import com.ur91k.clichat.terminal.Terminal;
+import com.ur91k.clichat.terminal.ChatTerminal;
 import com.ur91k.clichat.net.ChatServer;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCharCallback;
@@ -20,8 +20,8 @@ public class ServerApplication {
     private final String ip;
     private final int port;
     private Window window;
-    private Terminal terminal;
     private TextRenderer textRenderer;
+    private ChatTerminal terminal;
     private ChatServer server;
     private boolean running = true;
     
@@ -53,7 +53,7 @@ public class ServerApplication {
         
         // Create text renderer and terminal
         textRenderer = new TextRenderer(WINDOW_WIDTH, WINDOW_HEIGHT);
-        terminal = new Terminal(textRenderer);
+        terminal = new ChatTerminal(textRenderer);
         terminal.handleResize(WINDOW_WIDTH, WINDOW_HEIGHT);
         terminal.setUsername("SERVER");
         

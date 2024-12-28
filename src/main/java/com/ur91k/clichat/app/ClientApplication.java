@@ -2,7 +2,7 @@ package com.ur91k.clichat.app;
 
 import com.ur91k.clichat.render.TextRenderer;
 import com.ur91k.clichat.render.Window;
-import com.ur91k.clichat.terminal.Terminal;
+import com.ur91k.clichat.terminal.ChatTerminal;
 import com.ur91k.clichat.util.Logger;
 import com.ur91k.clichat.net.ChatClient;
 import com.ur91k.clichat.net.Message;
@@ -28,8 +28,8 @@ public class ClientApplication {
     private static final Random random = new Random();
     
     private Window window;
-    private Terminal terminal;
     private TextRenderer textRenderer;
+    private ChatTerminal terminal;
     private ChatClient client;
     private ServerConfig serverConfig;
     private boolean running = true;
@@ -74,7 +74,7 @@ public class ClientApplication {
         
         // Create text renderer and terminal
         textRenderer = new TextRenderer(WINDOW_WIDTH, WINDOW_HEIGHT);
-        terminal = new Terminal(textRenderer);
+        terminal = new ChatTerminal(textRenderer);
         terminal.handleResize(WINDOW_WIDTH, WINDOW_HEIGHT);
         
         // Generate random username and color

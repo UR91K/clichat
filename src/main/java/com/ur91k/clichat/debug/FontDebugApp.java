@@ -1,19 +1,16 @@
 package com.ur91k.clichat.debug;
 
 import com.ur91k.clichat.render.TextRenderer;
-import com.ur91k.clichat.render.FONFont;
-import com.ur91k.clichat.terminal.Terminal;
+import com.ur91k.clichat.terminal.DebugTerminal;
 import com.ur91k.clichat.util.Logger;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 
-import java.io.InputStream;
-
 public class FontDebugApp {
     private static final Logger logger = Logger.getLogger(FontDebugApp.class);
     private long window;
-    private Terminal terminal;
+    private DebugTerminal terminal;
     private TextRenderer textRenderer;
 
     public static void main(String[] args) {
@@ -60,11 +57,7 @@ public class FontDebugApp {
 
         // Create text renderer with window dimensions
         textRenderer = new TextRenderer(800, 600);
-        terminal = new Terminal(textRenderer, 80);
-
-        // Set up terminal
-        terminal.setStatus("FONT DEBUG");
-        terminal.setUsername("DEBUG");
+        terminal = new DebugTerminal(textRenderer, 80, "Font Character Grid");
         
         // Add character grid to terminal
         displayCharacterGrid();
@@ -77,7 +70,7 @@ public class FontDebugApp {
     }
 
     private void displayCharacterGrid() {
-        terminal.addLine("Font Character Grid (ASCII 32-126):");
+        terminal.addLine("ASCII Characters (32-126):");
         terminal.addLine("");
 
         // Header row
