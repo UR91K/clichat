@@ -3,9 +3,12 @@ package com.ur91k.clichat.app;
 import com.ur91k.clichat.render.TextRenderer;
 import com.ur91k.clichat.render.Window;
 import com.ur91k.clichat.terminal.Terminal;
+import com.ur91k.clichat.util.Logger;
 import com.ur91k.clichat.net.ChatClient;
 import com.ur91k.clichat.net.Message;
 import com.ur91k.clichat.config.ServerConfig;
+import com.ur91k.clichat.profile.UserProfile;
+import com.ur91k.clichat.profile.UserProfileManager;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCharCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
@@ -34,11 +37,15 @@ public class ClientApplication {
     private Vector4f userColor;
     
     private enum State {
+        PROFILE_SELECT,
+        PROFILE_CREATE,
+        PROFILE_LOGIN,
         DISCONNECTED,
         CONNECTING,
         CONNECTED
     }
-    private State currentState = State.DISCONNECTED;
+    private State currentState = State.PROFILE_SELECT;
+    private UserProfileManager profileManager;
     
     public void run() {
         init();
@@ -47,6 +54,10 @@ public class ClientApplication {
     }
     
     private void init() {
+        // Set up logging
+        Logger.setGlobalMinimumLevel(Logger.Level.DEBUG);
+        Logger.useColors(true);
+        
         // Initialize GLFW
         if (!glfwInit()) {
             throw new RuntimeException("Failed to initialize GLFW");
@@ -110,103 +121,165 @@ public class ClientApplication {
             }
         });
         
-        // Show server selection screen
-        showServerSelection();
+        // Initialize profile manager
+        profileManager = new UserProfileManager();
+        
+        // Show profile selection instead of server selection
+        showProfileSelection();
     }
     
-    private void showServerSelection() {
+    private void showProfileSelection() {
         terminal.clearLines();
         terminal.setConnectionInfo("DISCONNECTED", "");
         terminal.setRoomInfo("", null);
         
-        // User preview section
-        terminal.addLine("You appear as:");
-        terminal.addLine("[00:00:00] " + username + ": Hello, world!", userColor);
+        terminal.addLine("Welcome to CLIChat!");
         terminal.addLine("");
         
-        // Available servers section
-        terminal.addLine("Available rooms:");
-        terminal.addLine("-".repeat(40));  // Separator line
-        List<ServerConfig.ServerEntry> servers = serverConfig.getRecentServers();
-        if (servers.isEmpty()) {
-            terminal.addLine("No saved rooms. Connect to a server to add it to this list.");
-        } else {
-            for (int i = 0; i < servers.size(); i++) {
-                ServerConfig.ServerEntry server = servers.get(i);
-                terminal.addLine(String.format("%d. %-20s (%s:%d)", 
-                    i + 1, 
-                    server.getName(), 
-                    server.getIp(), 
-                    server.getPort()
-                ));
+        List<UserProfile> profiles = profileManager.getProfiles();
+        if (!profiles.isEmpty()) {
+            terminal.addLine("Select a profile:");
+            terminal.addLine("-".repeat(40));
+            for (int i = 0; i < profiles.size(); i++) {
+                terminal.addLine((i + 1) + ". " + profiles.get(i).toString());
             }
+            terminal.addLine("-".repeat(40));
+            terminal.addLine("");
         }
-        terminal.addLine("-".repeat(40));  // Separator line
+        
+        terminal.addLine("Commands:");
+        terminal.addLine("* Enter a number to select a profile");
+        terminal.addLine("* /new - Create a new profile");
+        terminal.addLine("* /quit - Exit application");
+    }
+    
+    private void showProfileCreate() {
+        currentState = State.PROFILE_CREATE;
+        terminal.clearLines();
+        terminal.addLine("Create New Profile");
+        terminal.addLine("-".repeat(40));
+        terminal.addLine("Enter username and password in format: username password");
+        terminal.addLine("Example: alice mypassword123");
         terminal.addLine("");
-        
-        // Connection options
-        terminal.addLine("Connect by:");
-        terminal.addLine("* Enter a number to join a room");
-        terminal.addLine("* Type an address (e.g. localhost:8887)");
-        terminal.addLine("* Use /connect <ip:port>");
+        terminal.addLine("/back - Return to profile selection");
+    }
+    
+    private void showProfileLogin(UserProfile profile) {
+        currentState = State.PROFILE_LOGIN;
+        terminal.clearLines();
+        terminal.addLine("Login to Profile: " + profile.getUsername());
+        terminal.addLine("-".repeat(40));
+        terminal.addLine("Enter password:");
         terminal.addLine("");
-        
-        // Help hint
-        terminal.addLine("Type /help for more commands");
-    }
-    
-    private void connectToServer(String ip, int port) {
-        try {
-            URI serverUri = new URI("ws://" + ip + ":" + port);
-            client = new ChatClient(serverUri, username, userColor,
-                this::handleMessage,
-                this::handleConnectionStatus);
-            client.connect();
-            currentState = State.CONNECTING;
-            terminal.setConnectionInfo("CONNECTING", ip + ":" + port);
-            terminal.addLine("Connecting to server...");
-        } catch (Exception e) {
-            terminal.addLine("Error connecting to server: " + e.getMessage());
-            currentState = State.DISCONNECTED;
-            showServerSelection();
-        }
-    }
-    
-    private void handleMessage(Message message) {
-        terminal.addLine(message.format(), message.getDisplayColor());
-        
-        // Update room info if it's a room update
-        if (message.getType() == Message.Type.ROOM_UPDATE) {
-            String roomName = message.getNewValue().split(";")[0];
-            terminal.setRoomInfo(roomName, client.getRoomColor());
-        }
-    }
-    
-    private void handleConnectionStatus(String status) {
-        if (status.equals("CONNECTED")) {
-            currentState = State.CONNECTED;
-        } else if (status.equals("DISCONNECTED")) {
-            currentState = State.DISCONNECTED;
-            showServerSelection();
-        }
-        terminal.setConnectionInfo(status, client != null && client.isConnected() ? 
-            client.getServerAddress() : "");
+        terminal.addLine("/back - Return to profile selection");
     }
     
     private void handleInput() {
         String input = terminal.getCurrentInput().trim();
         if (!input.isEmpty()) {
-            if (currentState == State.DISCONNECTED) {
-                handleDisconnectedInput(input);
-            } else if (input.startsWith("/")) {
-                handleCommand(input);
-            } else if (client != null && client.isConnected()) {
-                client.sendMessage(input);
-            } else {
-                terminal.addLine("* Not connected to server");
+            switch (currentState) {
+                case PROFILE_SELECT -> handleProfileSelect(input);
+                case PROFILE_CREATE -> handleProfileCreate(input);
+                case PROFILE_LOGIN -> handleProfileLogin(input);
+                case DISCONNECTED -> handleDisconnectedInput(input);
+                case CONNECTED -> {
+                    if (input.startsWith("/")) {
+                        handleCommand(input);
+                    } else if (client != null && client.isConnected()) {
+                        client.sendMessage(input);
+                    } else {
+                        terminal.addLine("* Not connected to server");
+                    }
+                }
             }
             terminal.clearInput();
         }
+    }
+    
+    private void handleProfileSelect(String input) {
+        if (input.equals("/new")) {
+            showProfileCreate();
+            return;
+        }
+        
+        if (input.equals("/quit")) {
+            running = false;
+            return;
+        }
+        
+        try {
+            int index = Integer.parseInt(input) - 1;
+            List<UserProfile> profiles = profileManager.getProfiles();
+            if (index >= 0 && index < profiles.size()) {
+                UserProfile selected = profiles.get(index);
+                showProfileLogin(selected);
+                return;
+            }
+        } catch (NumberFormatException ignored) {}
+        
+        terminal.addLine("* Invalid input. Enter a number or /new");
+    }
+    
+    private void handleProfileCreate(String input) {
+        if (input.equals("/back")) {
+            currentState = State.PROFILE_SELECT;
+            showProfileSelection();
+            return;
+        }
+        
+        String[] parts = input.split("\\s+", 2);
+        if (parts.length != 2) {
+            terminal.addLine("* Invalid format. Use: username password");
+            return;
+        }
+        
+        String username = parts[0];
+        String password = parts[1];
+        
+        // Generate random color for new profile
+        Vector4f color = new Vector4f(
+            0.3f + random.nextFloat() * 0.7f,
+            0.3f + random.nextFloat() * 0.7f,
+            0.3f + random.nextFloat() * 0.7f,
+            1.0f
+        );
+        
+        if (profileManager.createProfile(username, password, color)) {
+            terminal.addLine("* Profile created successfully!");
+            if (profileManager.login(username, password)) {
+                loadProfile(profileManager.getCurrentProfile());
+                currentState = State.DISCONNECTED;
+                showServerSelection();
+            }
+        } else {
+            terminal.addLine("* Username already exists");
+        }
+    }
+    
+    private void handleProfileLogin(String input) {
+        if (input.equals("/back")) {
+            currentState = State.PROFILE_SELECT;
+            showProfileSelection();
+            return;
+        }
+        
+        List<UserProfile> profiles = profileManager.getProfiles();
+        UserProfile selected = profiles.get(0);  // The one we're trying to log into
+        
+        if (profileManager.login(selected.getUsername(), input)) {
+            loadProfile(profileManager.getCurrentProfile());
+            currentState = State.DISCONNECTED;
+            showServerSelection();
+        } else {
+            terminal.addLine("* Incorrect password");
+        }
+    }
+    
+    private void loadProfile(UserProfile profile) {
+        username = profile.getUsername();
+        userColor = profile.getColor();
+        terminal.setUsername(username);
+        terminal.setUsernameColor(userColor);
     }
     
     private void handleDisconnectedInput(String input) {
@@ -307,6 +380,14 @@ public class ClientApplication {
                 }
                 userColor = newColor;
                 terminal.setUsernameColor(newColor);
+                
+                // Save to profile
+                if (profileManager.getCurrentProfile() != null) {
+                    profileManager.getCurrentProfile().setColor(newColor);
+                    profileManager.updateCurrentProfile();
+                }
+                
+                // Update client if connected
                 if (client != null && client.isConnected()) {
                     client.changeColor(newColor);
                 } else {
@@ -371,6 +452,85 @@ public class ClientApplication {
         }
         window.cleanup();
         glfwTerminate();
+    }
+    
+    private void showServerSelection() {
+        terminal.clearLines();
+        terminal.setConnectionInfo("DISCONNECTED", "");
+        terminal.setRoomInfo("", null);
+        
+        // User preview section
+        terminal.addLine("You appear as:");
+        terminal.addLine("[00:00:00] " + username + ": Hello, world!", userColor);
+        terminal.addLine("");
+        
+        // Available servers section
+        terminal.addLine("Available rooms:");
+        terminal.addLine("-".repeat(40));  // Separator line
+        List<ServerConfig.ServerEntry> servers = serverConfig.getRecentServers();
+        if (servers.isEmpty()) {
+            terminal.addLine("No saved rooms. Connect to a server to add it to this list.");
+        } else {
+            for (int i = 0; i < servers.size(); i++) {
+                ServerConfig.ServerEntry server = servers.get(i);
+                terminal.addLine(String.format("%d. %-20s (%s:%d)", 
+                    i + 1, 
+                    server.getName(), 
+                    server.getIp(), 
+                    server.getPort()
+                ));
+            }
+        }
+        terminal.addLine("-".repeat(40));  // Separator line
+        terminal.addLine("");
+        
+        // Connection options
+        terminal.addLine("Connect by:");
+        terminal.addLine("* Enter a number to join a room");
+        terminal.addLine("* Type an address (e.g. localhost:8887)");
+        terminal.addLine("* Use /connect <ip:port>");
+        terminal.addLine("");
+        
+        // Help hint
+        terminal.addLine("Type /help for more commands");
+    }
+    
+    private void connectToServer(String ip, int port) {
+        try {
+            URI serverUri = new URI("ws://" + ip + ":" + port);
+            client = new ChatClient(serverUri, username, userColor,
+                this::handleMessage,
+                this::handleConnectionStatus);
+            client.connect();
+            currentState = State.CONNECTING;
+            terminal.setConnectionInfo("CONNECTING", ip + ":" + port);
+            terminal.addLine("Connecting to server...");
+        } catch (Exception e) {
+            terminal.addLine("Error connecting to server: " + e.getMessage());
+            currentState = State.DISCONNECTED;
+            showServerSelection();
+        }
+    }
+    
+    private void handleMessage(Message message) {
+        terminal.addLine(message.format(), message.getDisplayColor());
+        
+        // Update room info if it's a room update
+        if (message.getType() == Message.Type.ROOM_UPDATE) {
+            String roomName = message.getNewValue().split(";")[0];
+            terminal.setRoomInfo(roomName, client.getRoomColor());
+        }
+    }
+    
+    private void handleConnectionStatus(String status) {
+        if (status.equals("CONNECTED")) {
+            currentState = State.CONNECTED;
+        } else if (status.equals("DISCONNECTED")) {
+            currentState = State.DISCONNECTED;
+            showServerSelection();
+        }
+        terminal.setConnectionInfo(status, client != null && client.isConnected() ? 
+            client.getServerAddress() : "");
     }
     
     public static void main(String[] args) {

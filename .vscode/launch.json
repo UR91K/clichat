@@ -3,6 +3,20 @@
     "configurations": [
         {
             "type": "java",
+            "name": "FontDebugApp",
+            "request": "launch",
+            "mainClass": "com.ur91k.clichat.debug.FontDebugApp",
+            "projectName": "clichat"
+        },
+        {
+            "type": "java",
+            "name": "FONDebugger",
+            "request": "launch",
+            "mainClass": "com.ur91k.clichat.app.FONDebugger",
+            "projectName": "clichat"
+        },
+        {
+            "type": "java",
             "name": "Launch Client",
             "request": "launch",
             "mainClass": "com.ur91k.clichat.app.ClientApplication",
@@ -14,7 +28,9 @@
             "request": "launch",
             "mainClass": "com.ur91k.clichat.app.ServerLauncher",
             "projectName": "clichat",
-            "args": ["--debug"]
+            "args": [
+                "--debug"
+            ]
         },
         {
             "type": "java",
@@ -22,7 +38,11 @@
             "request": "launch",
             "mainClass": "com.ur91k.clichat.app.ServerLauncher",
             "projectName": "clichat",
-            "args": ["--debug", "--port", "8888"]
+            "args": [
+                "--debug",
+                "--port",
+                "8888"
+            ]
         }
     ],
     "compounds": [

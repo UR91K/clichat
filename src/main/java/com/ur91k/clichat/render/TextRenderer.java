@@ -24,7 +24,7 @@ public class TextRenderer {
     private final int vbo;
     private final ShaderProgram shader;
     private final Matrix4f projection;
-    private final BDFFont font;
+    private final BitmapFont font;
     private final int textureId;
     
     public TextRenderer(int windowWidth, int windowHeight) {
@@ -150,7 +150,7 @@ public class TextRenderer {
         float xpos = x;
         
         for (char c : text.toCharArray()) {
-            BDFFont.Glyph glyph = font.getGlyph(c);
+            BitmapFont.Glyph glyph = font.getGlyph(c);
             if (glyph == null) {
                 logger.warn("No glyph found for character: {}", c);
                 continue;
@@ -213,7 +213,7 @@ public class TextRenderer {
         FloatBuffer vertices = BufferUtils.createFloatBuffer(16);
         
         for (char c : text.toCharArray()) {
-            BDFFont.Glyph glyph = font.getGlyph(c);
+            BitmapFont.Glyph glyph = font.getGlyph(c);
             if (glyph == null) continue;
             
             float x0 = xpos + glyph.xOffset * scale;
